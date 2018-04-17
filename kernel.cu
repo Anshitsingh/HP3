@@ -1,19 +1,19 @@
 #include <stdio.h>
 
 __global__ void
-reduce_kernel_row(int* g_data, int* g_odata, int numMats)
+reduce_kernel_row(int*** g_data, int* g_odata, int numMats)
 {
     extern __shared__ int sdata[];
 
     int tid = threadIdx.x;
-    int i = blockDim.x*blockIdx.x + threadIdx.x;
+    int i =( blockDim.x*blockIdx.x + threadIdx.x)/4;
 
     if(i < numMats)
     {
-        sdata[4*tid] = g_data[4*i];
-        sdata[4*tid + 1] = g_data[4*i + 1];
-        sdata[4*tid + 2] = g_data[4*i + 2];
-        sdata[4*tid + 3] = g_data[4*i + 3];
+        sdata[4*tid] = g_data[0][0][i];
+        sdata[4*tid + 1] = g_data[0][1][i] 
+        sdata[4*tid + 2] = g_data[1][0][i];
+        sdata[4*tid + 3] = g_data[1][1][i];
     }
     else
     {
@@ -48,19 +48,19 @@ reduce_kernel_row(int* g_data, int* g_odata, int numMats)
 }
 
 __global__ void
-reduce_kernel_row_opt1(int* g_data, int* g_odata, int numMats)
+reduce_kernel_row_opt1(int*** g_data, int* g_odata, int numMats)
 {
     extern __shared__ int sdata[];
 
     int tid = threadIdx.x;
-    int i = blockDim.x*blockIdx.x + threadIdx.x;
+    int i =( blockDim.x*blockIdx.x + threadIdx.x)/4;
 
     if(i < numMats)
     {
-        sdata[4*tid] = g_data[4*i];
-        sdata[4*tid + 1] = g_data[4*i + 1];
-        sdata[4*tid + 2] = g_data[4*i + 2];
-        sdata[4*tid + 3] = g_data[4*i + 3];
+        sdata[4*tid] = g_data[0][0][i];
+        sdata[4*tid + 1] = g_data[0][1][i] 
+        sdata[4*tid + 2] = g_data[1][0][i];
+        sdata[4*tid + 3] = g_data[1][1][i];
     }
     else
     {
@@ -69,7 +69,6 @@ reduce_kernel_row_opt1(int* g_data, int* g_odata, int numMats)
         sdata[4*tid + 2] = 0;
         sdata[4*tid + 3] = 0;
     }
-
     __syncthreads();
 
     for(int s=1;s<blockDim.x;s*=2)
@@ -97,19 +96,19 @@ reduce_kernel_row_opt1(int* g_data, int* g_odata, int numMats)
 }
 
 __global__ void
-reduce_kernel_row_opt2(int* g_data, int* g_odata, int numMats)
+reduce_kernel_row_opt2(int*** g_data, int* g_odata, int numMats)
 {
     extern __shared__ int sdata[];
 
     int tid = threadIdx.x;
-    int i = blockDim.x*blockIdx.x + threadIdx.x;
+    int i =( blockDim.x*blockIdx.x + threadIdx.x)/4;
 
     if(i < numMats)
     {
-        sdata[4*tid] = g_data[4*i];
-        sdata[4*tid + 1] = g_data[4*i + 1];
-        sdata[4*tid + 2] = g_data[4*i + 2];
-        sdata[4*tid + 3] = g_data[4*i + 3];
+        sdata[4*tid] = g_data[0][0][i];
+        sdata[4*tid + 1] = g_data[0][1][i] 
+        sdata[4*tid + 2] = g_data[1][0][i];
+        sdata[4*tid + 3] = g_data[1][1][i];
     }
     else
     {
@@ -153,17 +152,17 @@ reduce_kernel_row_opt3(int* g_data, int* g_odata, int numMats)
 
     if(i+blockDim.x < numMats)
     {
-        sdata[4*tid] = g_data[4*i] + g_data[4*(i+blockDim.x)];
-        sdata[4*tid + 1] = g_data[4*i + 1] + g_data[4*(i+blockDim.x) + 1];
-        sdata[4*tid + 2] = g_data[4*i + 2] + g_data[4*(i+blockDim.x) + 2];
-        sdata[4*tid + 3] = g_data[4*i + 3] + g_data[4*(i+blockDim.x) + 3];
+        sdata[4*tid] = g_data[0][0][i] + g_data[0][0][i+blockDim.x];
+        sdata[4*tid + 1] = g_data[0][1][i] + g_data[0][1][i+blockDim.x];
+        sdata[4*tid + 2] = g_data[1][0][i] + g_data[1][0][i+blockDim.x];
+        sdata[4*tid + 3] = g_data[1][1][i] + g_data[1][1][i+blockDim.x];
     }
     else if(i < numMats)
     {
-        sdata[4*tid] = g_data[4*i];
-        sdata[4*tid + 1] = g_data[4*i + 1];
-        sdata[4*tid + 2] = g_data[4*i + 2];
-        sdata[4*tid + 3] = g_data[4*i + 3];
+        sdata[4*tid] = g_data[0][0][i];
+        sdata[4*tid + 1] = g_data[0][1][i];
+        sdata[4*tid + 2] =g_data[1][0][i];
+        sdata[4*tid + 3] = g_data[1][1][i];
     }
     else
     {
@@ -206,17 +205,17 @@ reduce_kernel_row_opt4(int* g_data, int* g_odata, int numMats)
 
     if(i+blockDim.x < numMats)
     {
-        sdata[4*tid] = g_data[4*i] + g_data[4*(i+blockDim.x)];
-        sdata[4*tid + 1] = g_data[4*i + 1] + g_data[4*(i+blockDim.x) + 1];
-        sdata[4*tid + 2] = g_data[4*i + 2] + g_data[4*(i+blockDim.x) + 2];
-        sdata[4*tid + 3] = g_data[4*i + 3] + g_data[4*(i+blockDim.x) + 3];
+          sdata[4*tid] = g_data[0][0][i] + g_data[0][0][i+blockDim.x];
+        sdata[4*tid + 1] = g_data[0][1][i] + g_data[0][1][i+blockDim.x];
+        sdata[4*tid + 2] = g_data[1][0][i] + g_data[1][0][i+blockDim.x];
+        sdata[4*tid + 3] = g_data[1][1][i] + g_data[1][1][i+blockDim.x];
     }
     else if(i < numMats)
     {
-        sdata[4*tid] = g_data[4*i];
-        sdata[4*tid + 1] = g_data[4*i + 1];
-        sdata[4*tid + 2] = g_data[4*i + 2];
-        sdata[4*tid + 3] = g_data[4*i + 3];
+         sdata[4*tid] = g_data[0][0][i];
+        sdata[4*tid + 1] = g_data[0][1][i];
+        sdata[4*tid + 2] =g_data[1][0][i];
+        sdata[4*tid + 3] = g_data[1][1][i];
     }
     else
     {
@@ -299,8 +298,12 @@ reduce_kernel_row_opt4(int* g_data, int* g_odata, int numMats)
 }
 
 
+
+
+
+
 __global__ void
-reduce_kernel_col(int* g_data, int* g_odata, int numMats)
+reduce_kernel_col(int*** g_data, int* g_odata, int numMats)
 {
     extern __shared__ int sdata[];
 
@@ -309,10 +312,10 @@ reduce_kernel_col(int* g_data, int* g_odata, int numMats)
 
     if(i<numMats)
     {
-        sdata[tid] = g_data[4*i];
-        sdata[blockDim.x*1 + tid] = g_data[4*i + 1];
-        sdata[blockDim.x*2 + tid] = g_data[4*i + 2];
-        sdata[blockDim.x*3 + tid] = g_data[4*i + 3];
+        sdata[tid] = g_data[0][0][i];
+        sdata[blockDim.x*1 + tid] = g_data[1][0][i];
+        sdata[blockDim.x*2 + tid] = g_data[0][1][i];
+        sdata[blockDim.x*3 + tid] = g_data[1][1][i];
     }
     else
     {
@@ -358,10 +361,10 @@ reduce_kernel_col_opt1(int* g_data, int* g_odata, int numMats)
 
     if(i<numMats)
     {
-        sdata[tid] = g_data[4*i];
-        sdata[blockDim.x*1 + tid] = g_data[4*i + 1];
-        sdata[blockDim.x*2 + tid] = g_data[4*i + 2];
-        sdata[blockDim.x*3 + tid] = g_data[4*i + 3];
+        sdata[tid] = g_data[0][0][i];
+        sdata[blockDim.x*1 + tid] = g_data[1][0][i];
+        sdata[blockDim.x*2 + tid] = g_data[0][1][i];
+        sdata[blockDim.x*3 + tid] = g_data[1][1][i];
     }
     else
     {
@@ -407,10 +410,10 @@ reduce_kernel_col_opt2(int* g_data, int* g_odata, int numMats)
 
     if(i<numMats)
     {
-        sdata[tid] = g_data[4*i];
-        sdata[blockDim.x*1 + tid] = g_data[4*i + 1];
-        sdata[blockDim.x*2 + tid] = g_data[4*i + 2];
-        sdata[blockDim.x*3 + tid] = g_data[4*i + 3];
+        sdata[tid] = g_data[0][0][i];
+        sdata[blockDim.x*1 + tid] = g_data[1][0][i];
+        sdata[blockDim.x*2 + tid] = g_data[0][1][i];
+        sdata[blockDim.x*3 + tid] = g_data[1][1][i];
     }
     else
     {
@@ -453,17 +456,17 @@ reduce_kernel_col_opt3(int* g_data, int* g_odata, int numMats)
 
     if(i+blockDim.x < numMats)
     {
-        sdata[tid] = g_data[4*i] + g_data[4*(i+blockDim.x)];
-        sdata[blockDim.x*1 + tid] = g_data[4*i + 1] + g_data[4*(i+blockDim.x) + 1];
-        sdata[blockDim.x*2 + tid] = g_data[4*i + 2] + g_data[4*(i+blockDim.x) + 2];
-        sdata[blockDim.x*3 + tid] = g_data[4*i + 3] + g_data[4*(i+blockDim.x) + 3];
+        sdata[tid] = g_data[0][0][i] + g_data[0][0][i+blockDim.x];;
+        sdata[blockDim.x*1 + tid] = g_data[0][1][i] + g_data[0][1][i+blockDim.x];
+        sdata[blockDim.x*2 + tid] =  g_data[1][0][i] + g_data[1][0][i+blockDim.x];
+        sdata[blockDim.x*3 + tid] = g_data[1][1][i] + g_data[1][1][i+blockDim.x];
     }
     else if(i < numMats)
     {
-        sdata[tid] = g_data[4*i];
-        sdata[blockDim.x*1 + tid] = g_data[4*i + 1];
-        sdata[blockDim.x*2 + tid] = g_data[4*i + 2];
-        sdata[blockDim.x*3 + tid] = g_data[4*i + 3];
+        sdata[tid] = g_data[0][0][i] ;
+        sdata[blockDim.x*1 + tid] = g_data[0][1][i];
+        sdata[blockDim.x*2 + tid] = g_data[1][0][i];
+        sdata[blockDim.x*3 + tid] = g_data[1][1][i];
     }
     else
     {
@@ -507,17 +510,17 @@ reduce_kernel_col_opt4(int* g_data, int* g_odata, int numMats)
 
     if(i+blockDim.x < numMats)
     {
-        sdata[tid] = g_data[4*i] + g_data[4*(i+blockDim.x)];
-        sdata[blockDim.x*1 + tid] = g_data[4*i + 1] + g_data[4*(i+blockDim.x) + 1];
-        sdata[blockDim.x*2 + tid] = g_data[4*i + 2] + g_data[4*(i+blockDim.x) + 2];
-        sdata[blockDim.x*3 + tid] = g_data[4*i + 3] + g_data[4*(i+blockDim.x) + 3];
+        sdata[tid] = g_data[0][0][i] + g_data[0][0][i+blockDim.x];;
+        sdata[blockDim.x*1 + tid] = g_data[0][1][i] + g_data[0][1][i+blockDim.x];
+        sdata[blockDim.x*2 + tid] =  g_data[1][0][i] + g_data[1][0][i+blockDim.x];
+        sdata[blockDim.x*3 + tid] = g_data[1][1][i] + g_data[1][1][i+blockDim.x];
     }
     else if(i < numMats)
     {
-        sdata[tid] = g_data[4*i];
-        sdata[blockDim.x*1 + tid] = g_data[4*i + 1];
-        sdata[blockDim.x*2 + tid] = g_data[4*i + 2];
-        sdata[blockDim.x*3 + tid] = g_data[4*i + 3];
+        sdata[tid] = g_data[0][0][i] ;
+        sdata[blockDim.x*1 + tid] = g_data[0][1][i];
+        sdata[blockDim.x*2 + tid] = g_data[1][0][i];
+        sdata[blockDim.x*3 + tid] = g_data[1][1][i];
     }
     else
     {
